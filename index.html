@@ -63,14 +63,30 @@
     display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px;
   }
   .room-card{
-    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    background:var(--card); border:1.5px solid var(--line); border-radius:10px;
     padding:14px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:8px;
-    cursor:pointer; transition:border-color .15s ease, transform .1s ease;
+    cursor:pointer; transition:border-color .15s ease, transform .1s ease, background-color .15s ease, box-shadow .15s ease;
   }
   .room-card:hover{border-color:var(--accent); transform:translateY(-1px);}
   .room-card:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
   .room-card .icon-row{display:flex; align-items:center; justify-content:space-between;}
   .room-card svg.icon{width:22px; height:22px; color:var(--accent);}
+
+  .room-card.busy{
+    border-color:var(--busy); background:var(--busy-soft);
+    box-shadow:0 0 0 3px var(--busy-soft), var(--shadow);
+  }
+  .room-card.busy:hover{border-color:var(--busy);}
+  .room-card.busy svg.icon{color:var(--busy);}
+  .room-card.busy .name{color:var(--busy);}
+  .room-card.busy .pill.busy{background:var(--busy); color:#fff;}
+  @media (prefers-reduced-motion:no-preference){
+    .room-card.busy{animation:room-glow 2.4s ease-in-out infinite;}
+  }
+  @keyframes room-glow{
+    0%,100%{box-shadow:0 0 0 3px var(--busy-soft), var(--shadow);}
+    50%{box-shadow:0 0 0 6px var(--busy-soft), var(--shadow);}
+  }
   .pill{
     font-size:11px; font-weight:700; padding:3px 9px; border-radius:99px; letter-spacing:.03em;
     white-space:nowrap;
@@ -846,7 +862,7 @@
       const current = todays.find(b => toMinutes(b.start) <= nowMin && nowMin < toMinutes(b.end));
 
       const card = document.createElement("div");
-      card.className = "room-card";
+      card.className = "room-card" + (current ? " busy" : "");
       card.tabIndex = 0;
 
       let detailHtml, pillHtml;
