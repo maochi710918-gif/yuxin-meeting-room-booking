@@ -439,7 +439,7 @@
     </div>
     <div class="calendar-wrap">
       <div class="cal-weekdays">
-        <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+        <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
       </div>
       <div class="cal-grid" id="calGrid"></div>
     </div>
@@ -965,7 +965,7 @@
     label.textContent = year + "年" + (month+1) + "月";
 
     const firstOfMonth = new Date(year, month, 1);
-    const startOffset = firstOfMonth.getDay(); // 0=Sun
+    const startOffset = (firstOfMonth.getDay() + 6) % 7; // 0=Mon
     const gridStart = new Date(year, month, 1 - startOffset);
 
     const today = todayStr();
