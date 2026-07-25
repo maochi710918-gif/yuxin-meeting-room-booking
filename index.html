@@ -280,6 +280,44 @@
   .cal-dot{width:6px; height:6px; border-radius:50%; background:var(--c); flex:none;}
   .cal-day .d-more{font-size:10px; color:var(--ink-soft); font-family:var(--font-mono);}
   .cal-day .d-count{font-size:10.5px; color:var(--ink-soft); margin-top:auto; font-family:var(--font-mono); font-variant-numeric:tabular-nums;}
+  /* ── stats / export ── */
+  .stats-wrap{
+    background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); padding:16px;
+  }
+  .stats-filters{display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:16px;}
+  .stats-filters .field{min-width:140px;}
+  .stats-filters .field label{font-size:11px;}
+  .stats-filters .field input, .stats-filters .field select{font-size:13.5px; padding:8px 9px;}
+  .stats-quick{display:flex; gap:6px;}
+  .stats-quick button{
+    font:inherit; font-size:12px; padding:9px 12px; border-radius:7px; border:1px solid var(--line);
+    background:var(--paper); color:var(--ink-soft); cursor:pointer;
+  }
+  .stats-quick button:hover{border-color:var(--accent); color:var(--accent-ink);}
+  .export-btn{
+    margin-left:auto; background:var(--accent); color:#fff; border:none; padding:10px 16px;
+    border-radius:8px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;
+  }
+  .export-btn:hover{filter:brightness(1.08);}
+  .export-btn:disabled{opacity:.5; cursor:not-allowed;}
+
+  .stat-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:16px;}
+  .stat-card{background:var(--paper); border:1px solid var(--line-soft); border-radius:9px; padding:12px 14px;}
+  .stat-card .num{font-family:var(--font-mono); font-size:21px; font-weight:800; color:var(--ink); font-variant-numeric:tabular-nums;}
+  .stat-card .sub{font-size:12px; color:var(--ink); font-weight:600; margin-top:1px;}
+  .stat-card .lbl{font-size:11px; color:var(--ink-soft); margin-top:3px; letter-spacing:.02em;}
+
+  .stats-table-wrap{border:1px solid var(--line-soft); border-radius:9px; overflow:hidden;}
+  .stats-table-scroll{max-height:420px; overflow:auto;}
+  .stats-table{width:100%; border-collapse:collapse; font-size:12.5px; min-width:640px;}
+  .stats-table th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft);
+    background:var(--paper); padding:9px 10px; border-bottom:1px solid var(--line); position:sticky; top:0;
+  }
+  .stats-table td{padding:8px 10px; border-bottom:1px solid var(--line-soft); color:var(--ink); font-variant-numeric:tabular-nums;}
+  .stats-table tbody tr:hover{background:var(--paper);}
+  .stats-table .stats-empty td{text-align:center; color:var(--ink-soft); padding:28px;}
+
   /* ── mobile refinements ── */
   @media (max-width:640px){
     body{-webkit-text-size-adjust:100%;}
@@ -323,6 +361,13 @@
     .modal{padding:20px 18px; border-radius:12px;}
     .modal-close{padding:6px 8px; font-size:18px;}
     .policy-body p, .policy-body li{font-size:13px;}
+
+    .stats-wrap{padding:12px;}
+    .stats-filters{gap:8px;}
+    .stats-filters .field{min-width:calc(50% - 4px); flex:1;}
+    .export-btn{width:100%; margin-left:0; padding:12px 16px; min-height:44px;}
+    .stats-quick{width:100%;}
+    .stats-quick button{flex:1; min-height:40px;}
   }
 </style>
 </head>
@@ -452,6 +497,48 @@
       </div>
     </div>
   </section>
+
+  <section>
+    <div class="section-head"><h2>租借紀錄統計</h2></div>
+    <div class="stats-wrap">
+      <div class="stats-filters">
+        <div class="field">
+          <label for="st-start">起始日期</label>
+          <input type="date" id="st-start">
+        </div>
+        <div class="field">
+          <label for="st-end">結束日期</label>
+          <input type="date" id="st-end">
+        </div>
+        <div class="field">
+          <label for="st-room">會議室</label>
+          <select id="st-room"><option value="">全部會議室</option></select>
+        </div>
+        <div class="field">
+          <label for="st-dept">部門</label>
+          <select id="st-dept"><option value="">全部部門</option></select>
+        </div>
+        <div class="stats-quick">
+          <button type="button" id="stThisMonth">本月</button>
+          <button type="button" id="stAll">全部</button>
+        </div>
+        <button type="button" class="export-btn" id="exportBtn">⬇ 匯出 Excel</button>
+      </div>
+
+      <div class="stat-cards" id="statCards"></div>
+
+      <div class="stats-table-wrap">
+        <div class="stats-table-scroll">
+          <table class="stats-table">
+            <thead>
+              <tr><th>日期</th><th>時間</th><th>會議室</th><th>部門</th><th>租用人</th><th>會議名稱</th></tr>
+            </thead>
+            <tbody id="statsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -499,6 +586,9 @@
     </div>
   </div>
 </div>
+
+<!-- SheetJS (Excel 匯出用) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <!-- Firebase SDK -->
 <script type="module">
@@ -688,6 +778,19 @@
     const o = document.createElement("option");
     o.value = d.id; o.textContent = d.name;
     deptSel.appendChild(o);
+  });
+
+  const stRoomSel = document.getElementById("st-room");
+  ROOMS.forEach(r => {
+    const o = document.createElement("option");
+    o.value = r.id; o.textContent = r.name;
+    stRoomSel.appendChild(o);
+  });
+  const stDeptSel = document.getElementById("st-dept");
+  DEPTS.forEach(d => {
+    const o = document.createElement("option");
+    o.value = d.id; o.textContent = d.name;
+    stDeptSel.appendChild(o);
   });
 
   const dateInput = document.getElementById("f-date");
@@ -1010,11 +1113,99 @@
     }
   });
 
+  /* ── stats / export ── */
+  const stStart = document.getElementById("st-start");
+  const stEnd   = document.getElementById("st-end");
+
+  function filteredStatsRows(){
+    const start = stStart.value;
+    const end   = stEnd.value;
+    const room  = stRoomSel.value;
+    const dept  = stDeptSel.value;
+    return bookings.filter(b => {
+      if (start && b.date < start) return false;
+      if (end && b.date > end) return false;
+      if (room && b.roomId !== room) return false;
+      if (dept && b.dept !== dept) return false;
+      return true;
+    }).sort((a,b) => (a.date+a.start).localeCompare(b.date+b.start));
+  }
+
+  function renderStatsSection(){
+    const rows = filteredStatsRows();
+
+    // stat cards
+    const roomCount = {}, deptCount = {};
+    rows.forEach(b => {
+      roomCount[b.roomId] = (roomCount[b.roomId]||0) + 1;
+      deptCount[b.dept]   = (deptCount[b.dept]||0) + 1;
+    });
+    let topRoom = null, topDept = null;
+    Object.entries(roomCount).forEach(([id,n]) => { if (!topRoom || n>topRoom.n) topRoom = {id,n}; });
+    Object.entries(deptCount).forEach(([id,n]) => { if (!topDept || n>topDept.n) topDept = {id,n}; });
+
+    const cards = document.getElementById("statCards");
+    cards.innerHTML =
+      '<div class="stat-card"><div class="num">'+rows.length+'</div><div class="lbl">符合條件的租借次數</div></div>'+
+      '<div class="stat-card"><div class="num">'+(topRoom?topRoom.n:0)+'</div><div class="sub">'+(topRoom?esc(roomById(topRoom.id)?.name||""):"—")+'</div><div class="lbl">最常租用的會議室</div></div>'+
+      '<div class="stat-card"><div class="num">'+(topDept?topDept.n:0)+'</div><div class="sub">'+(topDept?esc(deptById(topDept.id)?.name||""):"—")+'</div><div class="lbl">最常租用的部門</div></div>';
+
+    // table
+    const tbody = document.getElementById("statsTableBody");
+    if (rows.length===0){
+      tbody.innerHTML = '<tr class="stats-empty"><td colspan="6">沒有符合篩選條件的紀錄</td></tr>';
+    }else{
+      tbody.innerHTML = rows.map(b => {
+        const room = roomById(b.roomId);
+        const dept = deptById(b.dept);
+        return '<tr><td>'+b.date+'</td><td>'+b.start+'–'+b.end+'</td><td>'+esc(room?room.name:"")+'</td>'+
+          '<td>'+esc(dept?dept.name:"")+'</td><td>'+esc(b.renter)+'</td><td>'+esc(b.title)+'</td></tr>';
+      }).join("");
+    }
+
+    document.getElementById("exportBtn").disabled = rows.length===0;
+  }
+
+  [stStart, stEnd, stRoomSel, stDeptSel].forEach(el => el.addEventListener("change", renderStatsSection));
+
+  document.getElementById("stThisMonth").addEventListener("click", () => {
+    const now = new Date();
+    stStart.value = now.getFullYear()+"-"+pad2(now.getMonth()+1)+"-01";
+    const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    stEnd.value = now.getFullYear()+"-"+pad2(now.getMonth()+1)+"-"+pad2(lastDay);
+    renderStatsSection();
+  });
+  document.getElementById("stAll").addEventListener("click", () => {
+    stStart.value = ""; stEnd.value = ""; stRoomSel.value = ""; stDeptSel.value = "";
+    renderStatsSection();
+  });
+
+  document.getElementById("exportBtn").addEventListener("click", () => {
+    const rows = filteredStatsRows();
+    if (!rows.length) return;
+    const data = rows.map(b => ({
+      "日期":     b.date,
+      "開始時間": b.start,
+      "結束時間": b.end,
+      "會議室":   roomById(b.roomId)?.name || b.roomId,
+      "部門":     deptById(b.dept)?.name || b.dept,
+      "租用人":   b.renter,
+      "會議名稱": b.title
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [{wch:12},{wch:10},{wch:10},{wch:18},{wch:10},{wch:12},{wch:26}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "租借紀錄");
+    const rangeLabel = (stStart.value||stEnd.value) ? (stStart.value||"起")+"~"+(stEnd.value||"迄") : "全部";
+    XLSX.writeFile(wb, "會議室租借紀錄_"+rangeLabel+".xlsx");
+  });
+
   function renderAll(){
     renderRoomGrid();
     renderCalendar();
     renderTimeline();
     renderAgenda();
+    renderStatsSection();
   }
 
   bootstrap();
