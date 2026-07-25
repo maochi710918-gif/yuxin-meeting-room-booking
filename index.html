@@ -190,6 +190,35 @@
     border-radius:8px; padding:9px 14px; font-size:12.5px; margin-bottom:20px; display:none;
   }
   .demo-banner.show{display:block;}
+
+  .policy-btn{
+    font:inherit; font-size:12.5px; padding:7px 13px; border-radius:7px; border:1px solid var(--line);
+    background:var(--card); color:var(--ink-soft); cursor:pointer; white-space:nowrap;
+  }
+  .policy-btn:hover{border-color:var(--accent); color:var(--accent-ink);}
+
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(27,36,48,.45);
+    z-index:600; align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--card); border-radius:14px; padding:26px 28px;
+    width:640px; max-width:100%; max-height:88vh; overflow-y:auto; box-shadow:var(--shadow);
+  }
+  .modal-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; border-bottom:1px solid var(--line); padding-bottom:14px; margin-bottom:4px;}
+  .modal-head h3{font-size:17px; font-weight:800; margin:0;}
+  .modal-close{
+    background:transparent; border:none; font-size:20px; line-height:1; color:var(--ink-soft);
+    cursor:pointer; padding:4px 6px; border-radius:6px; flex:none;
+  }
+  .modal-close:hover{background:var(--paper); color:var(--ink);}
+  .policy-body h4{font-size:13.5px; font-weight:700; color:var(--accent-ink); margin:18px 0 6px; letter-spacing:.02em;}
+  .policy-body h4:first-child{margin-top:16px;}
+  .policy-body p{font-size:13.5px; color:var(--ink-soft); margin:0 0 4px; line-height:1.7;}
+  .policy-body ol, .policy-body ul{margin:6px 0 0; padding-left:1.4em; display:flex; flex-direction:column; gap:6px;}
+  .policy-body li{font-size:13.5px; color:var(--ink); line-height:1.6;}
+  .policy-note{margin-top:18px; padding-top:14px; border-top:1px solid var(--line-soft); font-size:12.5px; color:var(--ink-soft); text-align:center;}
 </style>
 </head>
 <body>
@@ -203,6 +232,7 @@
       <p><span class="sync-dot" id="syncDot"></span><span id="syncLabel">連線中…</span>　裕信汽車・共 6 間會議室即時狀態與排程</p>
     </div>
     <div class="clock"><span id="clockDate">—</span><b id="clockTime">--:--:--</b></div>
+    <button type="button" class="policy-btn" id="policyBtn">📋 會議室使用規範</button>
   </header>
 
   <div class="demo-banner" id="demoBanner">
@@ -285,6 +315,50 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="policyOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="policyTitle">
+    <div class="modal-head">
+      <h3 id="policyTitle">會議室使用規範</h3>
+      <button type="button" class="modal-close" id="policyClose" aria-label="關閉">✕</button>
+    </div>
+    <div class="policy-body">
+      <h4>一、使用目的</h4>
+      <p>為維護會議室使用品質，提供同仁良好的會議環境，並提升空間使用效率，特訂定本規範，請全體同仁共同遵守。</p>
+
+      <h4>二、適用對象</h4>
+      <p>本規範適用於總公司全體員工及經核准使用會議室之訪客。</p>
+
+      <h4>三、使用規範</h4>
+      <ol>
+        <li>會議室採預約使用，請依公司規定完成預約後再使用。</li>
+        <li>使用時間請依預約時段進行，避免超時影響後續使用者；如需延長，請確認無其他預約後再辦理。</li>
+        <li>會議開始及結束請準時，提升會議效率。</li>
+        <li>會議期間請保持適當音量，避免影響周邊辦公區域。</li>
+        <li>離開前請將桌椅恢復原位，保持整潔。</li>
+        <li>白板請擦拭乾淨，會議資料及個人物品請一併帶離。</li>
+        <li>使用投影機、電視、視訊設備及其他器材後，請關閉電源並歸位。</li>
+        <li>離開會議室時，請關閉燈光、空調及其他電器設備，落實節能。</li>
+        <li>禁止攜帶味道濃烈或易造成髒亂之食物進入會議室；飲料請妥善放置，避免設備受損。</li>
+        <li>未經許可，不得擅自移動、拆卸或外借會議室設備。</li>
+        <li>如發現設備故障或環境異常，請立即通知管理單位處理。</li>
+        <li>請共同維護會議室整潔與公物，如有人為損壞，應依公司規定負擔相關責任。</li>
+      </ol>
+
+      <h4>四、管理原則</h4>
+      <ul>
+        <li>請尊重他人預約時段，不得占用未預約之會議室。</li>
+        <li>無故預約未使用者，管理單位得視情形取消後續預約權限。</li>
+        <li>如遇公司重大會議、教育訓練或主管指示，管理單位得優先調整會議室使用安排。</li>
+      </ul>
+
+      <h4>五、共同維護</h4>
+      <p>良好的會議環境需要大家共同維護，請每位使用者秉持「使用前確認、使用中愛護、使用後復原」的原則，共同打造整潔、高效率的會議空間。</p>
+
+      <div class="policy-note">感謝您的配合。</div>
+    </div>
+  </div>
+</div>
 
 <!-- Firebase SDK -->
 <script type="module">
@@ -432,6 +506,20 @@
     renderTimeline(); renderAgenda();
   });
   tlDateInput.addEventListener("change", () => { renderTimeline(); renderAgenda(); });
+
+  /* ── usage policy modal ── */
+  const policyOverlay = document.getElementById("policyOverlay");
+  function openPolicy(){
+    policyOverlay.classList.add("open");
+    document.getElementById("policyClose").focus();
+  }
+  function closePolicy(){ policyOverlay.classList.remove("open"); }
+  document.getElementById("policyBtn").addEventListener("click", openPolicy);
+  document.getElementById("policyClose").addEventListener("click", closePolicy);
+  policyOverlay.addEventListener("click", e => { if (e.target === policyOverlay) closePolicy(); });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && policyOverlay.classList.contains("open")) closePolicy();
+  });
 
   /* ── clock ── */
   const WEEKDAYS = ["日","一","二","三","四","五","六"];
