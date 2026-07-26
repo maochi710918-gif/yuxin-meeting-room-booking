@@ -424,7 +424,7 @@
       <p><span class="sync-dot" id="syncDot"></span><span id="syncLabel">連線中…</span>　裕信汽車・共 6 間會議室即時狀態與排程</p>
     </div>
     <div class="clock"><span id="clockDate">—</span><b id="clockTime">--:--:--</b></div>
-    <a href="guide.html" class="policy-btn" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">📖 使用說明</a>
+    <button type="button" class="policy-btn" id="guideBtn">📖 使用說明</button>
     <button type="button" class="policy-btn" id="policyBtn">📋 會議室使用規範</button>
   </header>
 
@@ -616,6 +616,50 @@
       <p>良好的會議環境需要大家共同維護，請每位使用者秉持「使用前確認、使用中愛護、使用後復原」的原則，共同打造整潔、高效率的會議空間。</p>
 
       <div class="policy-note">感謝您的配合。</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="guideOverlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+    <div class="modal-head">
+      <h3 id="guideTitle">使用說明</h3>
+      <button type="button" class="modal-close" id="guideClose" aria-label="關閉">✕</button>
+    </div>
+    <div class="policy-body">
+      <h4>1. 先看：這間會議室現在能不能用</h4>
+      <p>首頁「即時狀態」列出全部 6 間會議室：整張卡片亮橘色、還會微微發光的是<b>使用中</b>；淡灰色是<b>空閒</b>。點卡片可以直接跳到租借表單，並自動選好那間會議室。</p>
+      <p>想看某一天、某個時段的完整狀況，可以用：</p>
+      <ul>
+        <li><b>月曆總表</b> — 一次看整個月，日期下面的小色點代表當天有幾場租借，點日期會跳到下面顯示那天的詳細清單。</li>
+        <li><b>排程時間軸</b> — 6 間會議室同一天 08:00–20:00 的時段分布，一次看誰在哪個時間點用哪間。</li>
+      </ul>
+
+      <h4>2. 新增租借</h4>
+      <ol>
+        <li>選會議室、日期、開始／結束時間</li>
+        <li>選部門（總經理室 / CRM / 業務部 / 服務部 / 財務部 / 管理部 / 行企公司）</li>
+        <li>填租用人姓名、會議名稱</li>
+        <li>設定一組 2 碼數字密碼（例如 07）——<b>之後要修改或取消這筆租借都需要輸入</b>，請務必記住</li>
+        <li>按「送出租借」。若時段已被別人租走，系統會直接告訴你是誰訂的、訂到幾點，請改選其他時段</li>
+      </ol>
+
+      <h4>3. 修改或取消租借</h4>
+      <p>到「當日租借清單」找到要處理的那一筆（或先在月曆／時間軸點選日期，會自動帶到那天），右邊有兩個按鈕：</p>
+      <ul>
+        <li><b>編輯</b> — 輸入密碼後，資料會自動帶回上方表單，改完按「更新租借」即可，不會變成重複的兩筆。</li>
+        <li><b>取消租借</b> — 輸入密碼、再次確認後就會刪除這筆租借。</li>
+      </ul>
+      <p>密碼只有 2 碼，主要是防止別人手滑改到你的租借，<b>不是嚴格的資安機制</b>，請不要拿來當真正重要的密碼用。忘記密碼的話，找系統管理者協助處理。</p>
+
+      <h4>4. 其他功能</h4>
+      <ul>
+        <li><b>📢 置頂公告</b> — 網頁最上方，任何人都能點「編輯公告」更新內容，全公司即時看到。</li>
+        <li><b>📋 使用規範</b> — 就在這顆按鈕旁邊，租借前建議先看一次。</li>
+        <li><b>📊 租借紀錄統計</b> — 頁面最下方可依日期、會議室、部門篩選，並一鍵匯出 Excel。</li>
+      </ul>
+
+      <div class="policy-note">手機瀏覽器打開一樣能用，畫面會自動調整。</div>
     </div>
   </div>
 </div>
@@ -857,8 +901,21 @@
   document.getElementById("policyBtn").addEventListener("click", openPolicy);
   document.getElementById("policyClose").addEventListener("click", closePolicy);
   policyOverlay.addEventListener("click", e => { if (e.target === policyOverlay) closePolicy(); });
+
+  const guideOverlay = document.getElementById("guideOverlay");
+  function openGuide(){
+    guideOverlay.classList.add("open");
+    document.getElementById("guideClose").focus();
+  }
+  function closeGuide(){ guideOverlay.classList.remove("open"); }
+  document.getElementById("guideBtn").addEventListener("click", openGuide);
+  document.getElementById("guideClose").addEventListener("click", closeGuide);
+  guideOverlay.addEventListener("click", e => { if (e.target === guideOverlay) closeGuide(); });
+
   document.addEventListener("keydown", e => {
-    if (e.key === "Escape" && policyOverlay.classList.contains("open")) closePolicy();
+    if (e.key !== "Escape") return;
+    if (policyOverlay.classList.contains("open")) closePolicy();
+    if (guideOverlay.classList.contains("open")) closeGuide();
   });
 
   /* ── clock ── */
