@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>會議室租借系統使用說明</title>
+<style>
+  :root{
+    --ink:#1B2430;
+    --ink-soft:#4B5A68;
+    --paper:#F2F4F5;
+    --card:#FFFFFF;
+    --line:#DCE1E4;
+    --line-soft:#EBEEEF;
+    --accent:#2E6E7E;
+    --accent-soft:#E4EEF0;
+    --accent-ink:#1D4B57;
+    --ok:#2F9E5B;
+    --ok-soft:#E4F5EA;
+    --busy:#C1440E;
+    --busy-soft:#FBE7DC;
+    --warn:#B4791F;
+    --warn-soft:#F8ECD9;
+    --shadow:0 1px 2px rgba(27,36,48,.06),0 8px 24px -12px rgba(27,36,48,.18);
+    --font-cjk:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+    --font-mono:ui-monospace,"SFMono-Regular","Cascadia Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--font-cjk); line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:36px 20px 72px;}
+
+  header.hero{
+    background:var(--accent); color:#fff; border-radius:16px; padding:32px 28px;
+    margin-bottom:32px; box-shadow:var(--shadow);
+  }
+  header.hero .eyebrow{font-size:12px; letter-spacing:.08em; text-transform:uppercase; opacity:.85; margin-bottom:8px;}
+  header.hero h1{font-size:24px; font-weight:800; margin:0 0 10px; text-wrap:balance;}
+  header.hero p{margin:0 0 20px; font-size:14px; opacity:.92; max-width:52ch;}
+  .cta{
+    display:inline-flex; align-items:center; gap:8px; background:#fff; color:var(--accent-ink);
+    text-decoration:none; font-weight:700; font-size:14px; padding:11px 20px; border-radius:9px;
+    box-shadow:0 1px 2px rgba(0,0,0,.08);
+  }
+  .cta:hover{filter:brightness(.97);}
+
+  section{margin-bottom:28px;}
+  .step-card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px 26px;
+    box-shadow:var(--shadow);
+  }
+  .sec-head{display:flex; align-items:center; gap:12px; margin-bottom:14px;}
+  .sec-num{
+    flex:none; width:30px; height:30px; border-radius:9px; background:var(--accent-soft); color:var(--accent-ink);
+    display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-weight:800; font-size:14px;
+  }
+  .sec-head h2{font-size:17px; font-weight:800; margin:0;}
+  .step-card p{font-size:14px; color:var(--ink-soft); margin:0 0 6px;}
+  .step-card ol, .step-card ul{margin:10px 0 0; padding-left:1.3em; display:flex; flex-direction:column; gap:8px;}
+  .step-card li{font-size:14px; color:var(--ink); line-height:1.65;}
+  .step-card li b{color:var(--ink);}
+
+  .status-demo{display:flex; gap:10px; flex-wrap:wrap; margin:14px 0 4px;}
+  .demo-card{
+    flex:1; min-width:150px; border-radius:10px; padding:11px 13px; font-size:12.5px;
+    border:1.5px solid var(--line); background:var(--paper);
+  }
+  .demo-card.busy{border-color:var(--busy); background:var(--busy-soft);}
+  .demo-card .pill{
+    display:inline-block; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:99px; margin-bottom:6px;
+  }
+  .demo-card.busy .pill{background:var(--busy); color:#fff;}
+  .demo-card:not(.busy) .pill{background:var(--ok-soft); color:var(--ok);}
+  .demo-card .name{font-weight:700; font-size:13px;}
+  .demo-card.busy .name{color:var(--busy);}
+  .demo-card .sub{color:var(--ink-soft); font-size:11.5px; margin-top:2px;}
+
+  .callout{
+    display:flex; gap:12px; border-radius:10px; padding:14px 16px; font-size:13.5px; line-height:1.6;
+    margin-top:14px;
+  }
+  .callout.warn{background:var(--warn-soft); color:#7A5416;}
+  .callout.accent{background:var(--accent-soft); color:var(--accent-ink);}
+  .callout .ic{flex:none; font-size:16px;}
+
+  .kbd{
+    font-family:var(--font-mono); background:var(--paper); border:1px solid var(--line); border-radius:5px;
+    padding:1px 7px; font-size:12.5px; color:var(--ink);
+  }
+
+  .feature-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:14px;}
+  .feature{background:var(--paper); border:1px solid var(--line-soft); border-radius:10px; padding:14px;}
+  .feature .t{font-weight:700; font-size:13.5px; margin-bottom:4px;}
+  .feature .d{font-size:12.5px; color:var(--ink-soft); line-height:1.6;}
+
+  footer{
+    text-align:center; color:var(--ink-soft); font-size:12.5px; margin-top:36px; padding-top:20px;
+    border-top:1px solid var(--line);
+  }
+  footer a{color:var(--accent-ink);}
+
+  @media (max-width:640px){
+    .wrap{padding:24px 16px 56px;}
+    header.hero{padding:24px 20px;}
+    header.hero h1{font-size:20px;}
+    .step-card{padding:18px 18px;}
+    .feature-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow">裕信汽車・會議室租借系統</div>
+    <h1>怎麼查空房、怎麼租、怎麼改 — 這頁全部說明</h1>
+    <p>系統會即時同步，任何人打開網址看到的都是同一份最新資料，不用另外登入或安裝任何東西。</p>
+    <a class="cta" href="index.html">➜ 前往會議室租借系統</a>
+  </header>
+
+  <section>
+    <div class="step-card">
+      <div class="sec-head"><div class="sec-num">1</div><h2>先看：這間會議室現在能不能用</h2></div>
+      <p>首頁最上方「即時狀態」會列出全部 6 間會議室，一眼就能看出來：</p>
+      <div class="status-demo">
+        <div class="demo-card">
+          <span class="pill">空閒</span>
+          <div class="name">新莊玻璃屋會議室B</div>
+          <div class="sub">全日空閒 — 可以直接租</div>
+        </div>
+        <div class="demo-card busy">
+          <span class="pill">使用中</span>
+          <div class="name">新莊玻璃屋會議室A</div>
+          <div class="sub">業務部・業務教育訓練　至 12:00</div>
+        </div>
+      </div>
+      <p style="margin-top:12px">整張卡片亮橘色、還會微微發光的，就是現在正在使用中；淡灰色的是空的。點卡片可以直接跳到下方的租借表單，並自動幫你選好那間會議室。</p>
+      <p><b>想看某一天、某個時段的完整狀況</b>，可以用：</p>
+      <ul>
+        <li><b>月曆總表</b> — 一次看整個月，日期下面的小色點代表當天有幾場租借，點日期會自動跳到下面顯示那天的詳細清單。</li>
+        <li><b>排程時間軸</b> — 6 間會議室在同一天裡從 08:00 到 20:00 的時段分布，一次看誰在哪個時間點用哪間。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="step-card">
+      <div class="sec-head"><div class="sec-num">2</div><h2>新增租借</h2></div>
+      <p>在「新增租借」表單裡依序填寫：</p>
+      <ol>
+        <li>選<b>會議室</b>、<b>日期</b>、<b>開始／結束時間</b></li>
+        <li>選<b>部門</b>（總經理室 / CRM / 業務部 / 服務部 / 財務部 / 管理部 / 行企公司）</li>
+        <li>填<b>租用人</b>姓名、<b>會議名稱</b></li>
+        <li>設定一組 <b>2 碼數字密碼</b>（例如 <span class="kbd">07</span>）</li>
+        <li>按「送出租借」</li>
+      </ol>
+      <div class="callout warn">
+        <span class="ic">🔑</span>
+        <div>這組 2 碼密碼一定要記住——之後要<b>修改或取消</b>這筆租借時都需要輸入。如果同一時段已經被別人租走，系統會直接告訴你是誰訂的、訂到幾點，請改選其他時段。</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="step-card">
+      <div class="sec-head"><div class="sec-num">3</div><h2>修改或取消租借</h2></div>
+      <p>到「當日租借清單」（或先在月曆／時間軸點選日期，會自動帶到那天），找到要處理的那一筆，右邊有兩個按鈕：</p>
+      <ul>
+        <li><b>編輯</b> — 輸入密碼後，資料會自動帶回上方表單，改完再按「更新租借」即可，不會變成重複的兩筆。</li>
+        <li><b>取消租借</b> — 輸入密碼、再次確認後就會刪除這筆租借。</li>
+      </ul>
+      <div class="callout accent">
+        <span class="ic">💡</span>
+        <div>密碼只有 2 碼，主要是防止別人手滑改到你的租借，<b>不是嚴格的資安機制</b>，請不要拿來當真正重要的密碼用。忘記密碼的話，找系統管理者協助處理。</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="step-card">
+      <div class="sec-head"><div class="sec-num">4</div><h2>其他功能</h2></div>
+      <div class="feature-grid">
+        <div class="feature">
+          <div class="t">📢 置頂公告</div>
+          <div class="d">網頁最上方，任何人都能點「編輯公告」更新內容，全公司即時看到（例如設備維修中之類的通知）。</div>
+        </div>
+        <div class="feature">
+          <div class="t">📋 使用規範</div>
+          <div class="d">頁面右上角按鈕，租借前建議先看一次，裡面是會議室的使用與維護規定。</div>
+        </div>
+        <div class="feature">
+          <div class="t">📊 租借紀錄統計</div>
+          <div class="d">頁面最下方可依日期、會議室、部門篩選，並一鍵匯出 Excel，適合做月報或盤點使用率。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    手機瀏覽器打開一樣能用，畫面會自動調整。有問題找系統管理者。<br>
+    <a href="index.html">回到會議室租借系統</a>
+  </footer>
+
+</div>
+</body>
+</html>
