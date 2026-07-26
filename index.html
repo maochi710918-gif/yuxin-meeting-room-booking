@@ -112,13 +112,19 @@
   }
   .field input:focus, .field select:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
   .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .form-actions{display:flex; gap:8px; margin-top:4px;}
   .submit{
-    margin-top:4px; background:var(--accent); color:#fff; border:none; border-radius:8px;
+    flex:1; background:var(--accent); color:#fff; border:none; border-radius:8px;
     padding:11px 14px; font-size:14px; font-weight:700; cursor:pointer; letter-spacing:.02em;
   }
   .submit:hover{filter:brightness(1.08);}
   .submit:active{filter:brightness(.96);}
   .submit:disabled{opacity:.6; cursor:not-allowed;}
+  .cancel-edit-btn{
+    flex:none; background:transparent; border:1px solid var(--line); color:var(--ink-soft);
+    padding:11px 14px; border-radius:8px; font:inherit; font-size:13px; cursor:pointer;
+  }
+  .cancel-edit-btn:hover{border-color:var(--ink-soft);}
   .form-msg{font-size:12.5px; padding:9px 10px; border-radius:7px; display:none;}
   .form-msg.show{display:block;}
   .form-msg.err{background:var(--busy-soft); color:var(--busy);}
@@ -175,11 +181,13 @@
   .agenda-row .title{font-size:13.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .chip{font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; flex:none; color:var(--c); background:var(--cs);}
   .renter{font-size:12px; color:var(--ink-soft); flex:none;}
-  .cancel-btn{
+  .row-actions{display:flex; gap:6px; flex:none;}
+  .cancel-btn, .edit-btn{
     font:inherit; font-size:12px; border:1px solid var(--line); background:transparent; color:var(--ink-soft);
     padding:6px 10px; border-radius:7px; cursor:pointer;
   }
   .cancel-btn:hover{border-color:var(--busy); color:var(--busy);}
+  .edit-btn:hover{border-color:var(--accent); color:var(--accent-ink);}
   /* loading / toast (Firebase 連線狀態用) */
   .loading-overlay{
     position:fixed; inset:0; background:rgba(242,244,245,.9);
@@ -372,7 +380,8 @@
     .tl-roomname{padding:8px 6px 8px 2px; font-size:11.5px;}
 
     .agenda-row{grid-template-columns:1fr; row-gap:6px; padding:12px;}
-    .cancel-btn{padding:8px 12px; min-height:36px;}
+    .cancel-btn, .edit-btn{padding:8px 12px; min-height:36px;}
+    .form-actions{flex-direction:column;}
 
     .modal{padding:20px 18px; border-radius:12px;}
     .modal-close{padding:6px 8px; font-size:18px;}
@@ -448,7 +457,7 @@
   <section>
     <div class="layout">
       <form class="booking" id="bookingForm">
-        <h2>新增租借</h2>
+        <h2 id="formTitle">新增租借</h2>
         <div class="field">
           <label for="f-room">會議室</label>
           <select id="f-room" required></select>
@@ -482,7 +491,14 @@
           <label for="f-title">會議名稱</label>
           <input type="text" id="f-title" placeholder="例：Q3 業績檢討會議" required>
         </div>
-        <button type="submit" class="submit" id="submitBtn">送出租借</button>
+        <div class="field">
+          <label for="f-pin">設定密碼（2碼數字，修改/取消時需要輸入）</label>
+          <input type="text" id="f-pin" inputmode="numeric" pattern="[0-9]{2}" maxlength="2" placeholder="例：07" required>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="submit" id="submitBtn">送出租借</button>
+          <button type="button" class="cancel-edit-btn" id="cancelEditBtn" style="display:none">取消編輯</button>
+        </div>
         <div class="form-msg" id="formMsg"></div>
       </form>
 
@@ -611,7 +627,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import {
     getFirestore, collection, doc, onSnapshot,
-    addDoc, deleteDoc, setDoc, serverTimestamp
+    addDoc, updateDoc, deleteDoc, setDoc, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   /* ════════════════════════════════════════
@@ -669,6 +685,15 @@
   let unsubscribe = null;
   let unsubscribeAnnounce = null;
   let calMonth = new Date(); calMonth.setDate(1);
+  let editingId = null;
+
+  function checkPin(b){
+    if (!b.pin) return true; // 舊資料未設密碼，不擋
+    const input = prompt("這筆租借有設定密碼，請輸入2碼密碼以繼續：");
+    if (input === null) return false;
+    if (input.trim() !== b.pin){ alert("密碼錯誤，無法操作。"); return false; }
+    return true;
+  }
 
   function pad2(n){ return n<10 ? "0"+n : ""+n; }
   function todayStr(){
@@ -1045,11 +1070,24 @@
           '<span class="title">'+esc(b.title)+'</span>'+
           '<span class="renter">'+esc(b.renter)+'</span>'+
         '</div>';
+      const actions = document.createElement("div");
+      actions.className = "row-actions";
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "edit-btn";
+      editBtn.type = "button";
+      editBtn.textContent = "編輯";
+      editBtn.addEventListener("click", () => {
+        if (!checkPin(b)) return;
+        enterEditMode(b);
+      });
+
       const btn = document.createElement("button");
       btn.className = "cancel-btn";
       btn.type = "button";
       btn.textContent = "取消租借";
       btn.addEventListener("click", async () => {
+        if (!checkPin(b)) return;
         if (!confirm("確定要取消「"+b.title+"」（"+b.start+"–"+b.end+"）的租借嗎？")) return;
         try{
           if (IS_DEMO){
@@ -1059,23 +1097,58 @@
           }else{
             await deleteDoc(doc(db, 'bookings', b.id));
           }
+          if (editingId === b.id) exitEditMode();
           showToast("已取消租借");
         }catch(e){ alert("取消失敗："+e.message); }
       });
-      row.appendChild(btn);
+
+      actions.appendChild(editBtn);
+      actions.appendChild(btn);
+      row.appendChild(actions);
       list.appendChild(row);
     });
   }
 
-  /* ── form submit ── */
+  /* ── form submit / edit mode ── */
   const form = document.getElementById("bookingForm");
   const msg = document.getElementById("formMsg");
   const submitBtn = document.getElementById("submitBtn");
+  const formTitleEl = document.getElementById("formTitle");
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
+  const pinInput = document.getElementById("f-pin");
 
   function showMsg(text, kind){
     msg.textContent = text;
     msg.className = "form-msg show "+kind;
   }
+
+  function enterEditMode(b){
+    editingId = b.id;
+    roomSel.value = b.roomId;
+    dateInput.value = b.date;
+    document.getElementById("f-start").value = b.start;
+    document.getElementById("f-end").value = b.end;
+    deptSel.value = b.dept;
+    document.getElementById("f-renter").value = b.renter;
+    document.getElementById("f-title").value = b.title;
+    pinInput.value = b.pin || "";
+    formTitleEl.textContent = "編輯租借";
+    submitBtn.textContent = "更新租借";
+    cancelEditBtn.style.display = "";
+    msg.className = "form-msg";
+    document.querySelector("form.booking").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+
+  function exitEditMode(){
+    editingId = null;
+    formTitleEl.textContent = "新增租借";
+    submitBtn.textContent = "送出租借";
+    cancelEditBtn.style.display = "none";
+    form.reset();
+    dateInput.value = todayStr();
+  }
+
+  cancelEditBtn.addEventListener("click", exitEditMode);
 
   form.addEventListener("submit", async e => {
     e.preventDefault();
@@ -1087,16 +1160,20 @@
     const dept = deptSel.value;
     const renter = document.getElementById("f-renter").value.trim();
     const title = document.getElementById("f-title").value.trim();
+    const pin = pinInput.value.trim();
 
-    if (!date || !start || !end || !renter || !title){
+    if (!date || !start || !end || !renter || !title || !pin){
       showMsg("請完整填寫所有欄位。", "err"); return;
+    }
+    if (!/^\d{2}$/.test(pin)){
+      showMsg("密碼須為 2 碼數字。", "err"); return;
     }
     if (toMinutes(end) <= toMinutes(start)){
       showMsg("結束時間必須晚於開始時間。", "err"); return;
     }
 
     const conflict = bookings.find(b =>
-      b.roomId===roomId && b.date===date &&
+      b.roomId===roomId && b.date===date && b.id!==editingId &&
       overlaps(toMinutes(start), toMinutes(end), toMinutes(b.start), toMinutes(b.end))
     );
     if (conflict){
@@ -1105,21 +1182,37 @@
       return;
     }
 
-    const data = { roomId, date, start, end, dept, renter, title };
+    const data = { roomId, date, start, end, dept, renter, title, pin };
+    const wasEditing = !!editingId;
 
     submitBtn.disabled = true;
     try{
-      if (IS_DEMO){
-        bookings.push({ id: "b"+Date.now()+Math.random().toString(16).slice(2), ...data });
-        localStorage.setItem(DEMO_KEY, JSON.stringify(bookings));
-        renderAll();
+      if (wasEditing){
+        if (IS_DEMO){
+          const idx = bookings.findIndex(x => x.id===editingId);
+          if (idx>=0) bookings[idx] = { ...bookings[idx], ...data };
+          localStorage.setItem(DEMO_KEY, JSON.stringify(bookings));
+          renderAll();
+        }else{
+          await updateDoc(doc(db, 'bookings', editingId), data);
+        }
+        showToast("✅ 已更新租借");
+        exitEditMode();
+        showMsg("租借已更新：「"+title+"」。", "ok");
       }else{
-        await addDoc(colRef, { ...data, createdAt: serverTimestamp() });
+        if (IS_DEMO){
+          bookings.push({ id: "b"+Date.now()+Math.random().toString(16).slice(2), ...data });
+          localStorage.setItem(DEMO_KEY, JSON.stringify(bookings));
+          renderAll();
+        }else{
+          await addDoc(colRef, { ...data, createdAt: serverTimestamp() });
+        }
+        showMsg("租借成功：「"+title+"」已排入 "+roomById(roomId).name+"。", "ok");
+        showToast("✅ 租借成功");
+        document.getElementById("f-renter").value = "";
+        document.getElementById("f-title").value = "";
+        pinInput.value = "";
       }
-      showMsg("租借成功：「"+title+"」已排入 "+roomById(roomId).name+"。", "ok");
-      showToast("✅ 租借成功");
-      document.getElementById("f-renter").value = "";
-      document.getElementById("f-title").value = "";
       tlDateInput.value = date;
       if (IS_DEMO){ renderTimeline(); renderAgenda(); }
     }catch(e){
