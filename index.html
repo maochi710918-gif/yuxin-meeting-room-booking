@@ -484,6 +484,10 @@
           <label for="f-dept">部門</label>
           <select id="f-dept" required></select>
         </div>
+        <div class="field" id="f-dept-other-wrap" style="display:none">
+          <label for="f-dept-other">自行輸入部門名稱</label>
+          <input type="text" id="f-dept-other" placeholder="例：行銷部">
+        </div>
         <div class="field">
           <label for="f-renter">租用人</label>
           <input type="text" id="f-renter" placeholder="姓名" required>
@@ -747,6 +751,9 @@
   }
   function toMinutes(hhmm){ const p = hhmm.split(":"); return (+p[0])*60 + (+p[1]); }
   function deptById(id){ return DEPTS.find(d => d.id===id); }
+  function deptInfo(id){
+    return deptById(id) || { id, name:id, c:"var(--ink-soft)", cs:"var(--line-soft)" };
+  }
   function roomById(id){ return ROOMS.find(r => r.id===id); }
   function overlaps(aS,aE,bS,bE){ return aS < bE && bS < aE; }
   function esc(s){
@@ -865,6 +872,18 @@
     o.value = d.id; o.textContent = d.name;
     deptSel.appendChild(o);
   });
+  const deptOtherOpt = document.createElement("option");
+  deptOtherOpt.value = "__other__"; deptOtherOpt.textContent = "其他（自行輸入）";
+  deptSel.appendChild(deptOtherOpt);
+
+  const deptOtherWrap = document.getElementById("f-dept-other-wrap");
+  const deptOtherInput = document.getElementById("f-dept-other");
+  function syncDeptOtherVisibility(){
+    const isOther = deptSel.value === "__other__";
+    deptOtherWrap.style.display = isOther ? "" : "none";
+    deptOtherInput.required = isOther;
+  }
+  deptSel.addEventListener("change", syncDeptOtherVisibility);
 
   const stRoomSel = document.getElementById("st-room");
   ROOMS.forEach(r => {
@@ -878,6 +897,9 @@
     o.value = d.id; o.textContent = d.name;
     stDeptSel.appendChild(o);
   });
+  const stDeptOtherOpt = document.createElement("option");
+  stDeptOtherOpt.value = "__other__"; stDeptOtherOpt.textContent = "其他（自訂部門）";
+  stDeptSel.appendChild(stDeptOtherOpt);
 
   const dateInput = document.getElementById("f-date");
   const tlDateInput = document.getElementById("tl-date");
@@ -950,9 +972,9 @@
 
       let detailHtml, pillHtml;
       if (current){
-        const dept = deptById(current.dept);
+        const dept = deptInfo(current.dept);
         pillHtml = '<span class="pill busy">使用中</span>';
-        detailHtml = (dept?dept.name+"・":"")+esc(current.title)+"　至 "+current.end;
+        detailHtml = esc(dept.name)+"・"+esc(current.title)+"　至 "+current.end;
       }else{
         const next = todays.find(b => toMinutes(b.start) > nowMin);
         pillHtml = '<span class="pill ok">空閒</span>';
@@ -1011,16 +1033,16 @@
         const s = Math.max(toMinutes(b.start), DAY_START*60);
         const e = Math.min(toMinutes(b.end), DAY_END*60);
         if (e<=s) return;
-        const dept = deptById(b.dept);
+        const dept = deptInfo(b.dept);
         const left = (s - DAY_START*60) / totalMin * 100;
         const width = (e - s) / totalMin * 100;
         const block = document.createElement("div");
         block.className = "tl-block";
         block.style.left = left+"%";
         block.style.width = "max(" + width + "%, 32px)";
-        block.style.setProperty("--b", dept ? dept.c : "var(--accent)");
-        block.style.setProperty("--bg2", dept ? dept.cs : "var(--accent-soft)");
-        block.title = room.name+" | "+b.start+"–"+b.end+" | "+(dept?dept.name:"")+" | "+b.renter+" | "+b.title;
+        block.style.setProperty("--b", dept.c);
+        block.style.setProperty("--bg2", dept.cs);
+        block.title = room.name+" | "+b.start+"–"+b.end+" | "+dept.name+" | "+b.renter+" | "+b.title;
         block.innerHTML = '<b>'+esc(b.title)+'</b> <span class="t">'+b.start+'</span>';
         track.appendChild(block);
       });
@@ -1069,8 +1091,8 @@
 
       const dayBookings = bookings.filter(b => b.date === dateStr);
       const dotsHtml = dayBookings.slice(0,6).map(b => {
-        const dept = deptById(b.dept);
-        return '<span class="cal-dot" style="--c:'+(dept?dept.c:"var(--accent)")+'"></span>';
+        const dept = deptInfo(b.dept);
+        return '<span class="cal-dot" style="--c:'+dept.c+'"></span>';
       }).join("");
       const moreHtml = dayBookings.length > 6 ? '<span class="d-more">+'+(dayBookings.length-6)+'</span>' : "";
       const countHtml = dayBookings.length ? dayBookings.length+" 場" : "";
@@ -1117,14 +1139,14 @@
 
     items.forEach(b => {
       const room = roomById(b.roomId);
-      const dept = deptById(b.dept);
+      const dept = deptInfo(b.dept);
       const row = document.createElement("div");
       row.className = "agenda-row";
       row.innerHTML =
         '<div class="time">'+b.start+'<br>'+b.end+'</div>'+
         '<div class="room">'+esc(room?room.name:"")+'</div>'+
         '<div class="meta">'+
-          '<span class="chip" style="--c:'+(dept?dept.c:"")+';--cs:'+(dept?dept.cs:"")+'">'+esc(dept?dept.name:"")+'</span>'+
+          '<span class="chip" style="--c:'+dept.c+';--cs:'+dept.cs+'">'+esc(dept.name)+'</span>'+
           '<span class="title">'+esc(b.title)+'</span>'+
           '<span class="renter">'+esc(b.renter)+'</span>'+
         '</div>';
@@ -1186,7 +1208,14 @@
     dateInput.value = b.date;
     document.getElementById("f-start").value = b.start;
     document.getElementById("f-end").value = b.end;
-    deptSel.value = b.dept;
+    if (deptById(b.dept)){
+      deptSel.value = b.dept;
+      deptOtherInput.value = "";
+    }else{
+      deptSel.value = "__other__";
+      deptOtherInput.value = b.dept;
+    }
+    syncDeptOtherVisibility();
     document.getElementById("f-renter").value = b.renter;
     document.getElementById("f-title").value = b.title;
     pinInput.value = b.pin || "";
@@ -1204,6 +1233,7 @@
     cancelEditBtn.style.display = "none";
     form.reset();
     dateInput.value = todayStr();
+    syncDeptOtherVisibility();
   }
 
   cancelEditBtn.addEventListener("click", exitEditMode);
@@ -1215,12 +1245,19 @@
     const date = dateInput.value;
     const start = document.getElementById("f-start").value;
     const end = document.getElementById("f-end").value;
-    const dept = deptSel.value;
+    let dept = deptSel.value;
     const renter = document.getElementById("f-renter").value.trim();
     const title = document.getElementById("f-title").value.trim();
     const pin = pinInput.value.trim();
 
-    if (!date || !start || !end || !renter || !title || !pin){
+    if (dept === "__other__"){
+      dept = deptOtherInput.value.trim();
+      if (!dept){
+        showMsg("請輸入自訂部門名稱。", "err"); return;
+      }
+    }
+
+    if (!date || !start || !end || !dept || !renter || !title || !pin){
       showMsg("請完整填寫所有欄位。", "err"); return;
     }
     if (!/^\d{2}$/.test(pin)){
@@ -1235,8 +1272,8 @@
       overlaps(toMinutes(start), toMinutes(end), toMinutes(b.start), toMinutes(b.end))
     );
     if (conflict){
-      const cd = deptById(conflict.dept);
-      showMsg("此時段已被「"+conflict.title+"」（"+(cd?cd.name:"")+"・"+conflict.renter+"）預約，時間 "+conflict.start+"–"+conflict.end+"，請改選其他時段。", "err");
+      const cd = deptInfo(conflict.dept);
+      showMsg("此時段已被「"+conflict.title+"」（"+cd.name+"・"+conflict.renter+"）預約，時間 "+conflict.start+"–"+conflict.end+"，請改選其他時段。", "err");
       return;
     }
 
@@ -1293,7 +1330,8 @@
       if (start && b.date < start) return false;
       if (end && b.date > end) return false;
       if (room && b.roomId !== room) return false;
-      if (dept && b.dept !== dept) return false;
+      if (dept === "__other__"){ if (deptById(b.dept)) return false; }
+      else if (dept && b.dept !== dept) return false;
       return true;
     }).sort((a,b) => (a.date+a.start).localeCompare(b.date+b.start));
   }
@@ -1315,7 +1353,7 @@
     cards.innerHTML =
       '<div class="stat-card"><div class="num">'+rows.length+'</div><div class="lbl">符合條件的租借次數</div></div>'+
       '<div class="stat-card"><div class="num">'+(topRoom?topRoom.n:0)+'</div><div class="sub">'+(topRoom?esc(roomById(topRoom.id)?.name||""):"—")+'</div><div class="lbl">最常租用的會議室</div></div>'+
-      '<div class="stat-card"><div class="num">'+(topDept?topDept.n:0)+'</div><div class="sub">'+(topDept?esc(deptById(topDept.id)?.name||""):"—")+'</div><div class="lbl">最常租用的部門</div></div>';
+      '<div class="stat-card"><div class="num">'+(topDept?topDept.n:0)+'</div><div class="sub">'+(topDept?esc(deptInfo(topDept.id).name):"—")+'</div><div class="lbl">最常租用的部門</div></div>';
 
     // table
     const tbody = document.getElementById("statsTableBody");
@@ -1324,9 +1362,9 @@
     }else{
       tbody.innerHTML = rows.map(b => {
         const room = roomById(b.roomId);
-        const dept = deptById(b.dept);
+        const dept = deptInfo(b.dept);
         return '<tr><td>'+b.date+'</td><td>'+b.start+'–'+b.end+'</td><td>'+esc(room?room.name:"")+'</td>'+
-          '<td>'+esc(dept?dept.name:"")+'</td><td>'+esc(b.renter)+'</td><td>'+esc(b.title)+'</td></tr>';
+          '<td>'+esc(dept.name)+'</td><td>'+esc(b.renter)+'</td><td>'+esc(b.title)+'</td></tr>';
       }).join("");
     }
 
@@ -1355,7 +1393,7 @@
       "開始時間": b.start,
       "結束時間": b.end,
       "會議室":   roomById(b.roomId)?.name || b.roomId,
-      "部門":     deptById(b.dept)?.name || b.dept,
+      "部門":     deptInfo(b.dept).name,
       "租用人":   b.renter,
       "會議名稱": b.title
     }));
