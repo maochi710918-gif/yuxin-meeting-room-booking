@@ -473,11 +473,11 @@
         <div class="row2">
           <div class="field">
             <label for="f-start">開始時間</label>
-            <input type="time" id="f-start" lang="en-GB" required step="900">
+            <select id="f-start" required></select>
           </div>
           <div class="field">
             <label for="f-end">結束時間</label>
-            <input type="time" id="f-end" lang="en-GB" required step="900">
+            <select id="f-end" required></select>
           </div>
         </div>
         <div class="field">
@@ -873,6 +873,28 @@
     deptOptions.appendChild(o);
   });
 
+  const TIME_OPTIONS = [];
+  for (let m = 0; m < 24*60; m += 15){
+    TIME_OPTIONS.push(pad2(Math.floor(m/60))+":"+pad2(m%60));
+  }
+  const startSel = document.getElementById("f-start");
+  const endSel = document.getElementById("f-end");
+  [startSel, endSel].forEach(sel => {
+    TIME_OPTIONS.forEach(t => {
+      const o = document.createElement("option");
+      o.value = t; o.textContent = t;
+      sel.appendChild(o);
+    });
+  });
+  function setTimeSelectValue(sel, value){
+    if (value && !TIME_OPTIONS.includes(value)){
+      const o = document.createElement("option");
+      o.value = value; o.textContent = value+"（非15分刻度）";
+      sel.appendChild(o);
+    }
+    sel.value = value;
+  }
+
   const stRoomSel = document.getElementById("st-room");
   ROOMS.forEach(r => {
     const o = document.createElement("option");
@@ -894,6 +916,8 @@
   dateInput.value = todayStr();
   tlDateInput.value = todayStr();
   dateInput.min = todayStr();
+  startSel.value = "09:00";
+  endSel.value = "10:00";
 
   document.getElementById("todayBtn").addEventListener("click", () => {
     tlDateInput.value = todayStr();
@@ -1194,8 +1218,8 @@
     editingId = b.id;
     roomSel.value = b.roomId;
     dateInput.value = b.date;
-    document.getElementById("f-start").value = b.start;
-    document.getElementById("f-end").value = b.end;
+    setTimeSelectValue(startSel, b.start);
+    setTimeSelectValue(endSel, b.end);
     deptInput.value = deptInfo(b.dept).name;
     document.getElementById("f-renter").value = b.renter;
     document.getElementById("f-title").value = b.title;
@@ -1214,6 +1238,8 @@
     cancelEditBtn.style.display = "none";
     form.reset();
     dateInput.value = todayStr();
+    startSel.value = "09:00";
+    endSel.value = "10:00";
   }
 
   cancelEditBtn.addEventListener("click", exitEditMode);
