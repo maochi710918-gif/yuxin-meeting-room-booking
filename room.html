@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="會議室看板" />
+<title>會議室門口看板</title>
+<style>
+  :root{
+    --ink:#1B2430;
+    --ink-soft:#4B5A68;
+    --paper:#F2F4F5;
+    --line:#DCE1E4;
+    --ok:#2F9E5B;
+    --busy:#C1440E;
+    --soon:#B4791F;
+
+    --dept-1:#6B5CA5; --dept-2:#2B7A9B; --dept-3:#B4791F; --dept-4:#2F9E5B;
+    --dept-5:#B0563E; --dept-6:#5C6B73; --dept-7:#A54B6B;
+
+    --font-cjk:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+    --font-mono:ui-monospace,"SFMono-Regular","Cascadia Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; font-family:var(--font-cjk); color:#fff;
+    background:var(--ok); transition:background .6s ease;
+    -webkit-font-smoothing:antialiased; -webkit-user-select:none; user-select:none;
+    overflow:hidden;
+  }
+  body.busy{background:var(--busy);}
+  body.soon{background:var(--soon);}
+  body.picker{background:var(--paper); color:var(--ink); overflow:auto;}
+
+  /* ── display ── */
+  .screen{
+    height:100vh; height:100dvh;
+    display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);
+    padding:max(env(safe-area-inset-top),3vh) max(env(safe-area-inset-right),3vw)
+            max(env(safe-area-inset-bottom),3vh) max(env(safe-area-inset-left),3vw);
+    gap:3vw;
+  }
+  .main{display:flex; flex-direction:column; min-width:0;}
+  .top{display:flex; justify-content:space-between; align-items:flex-start; gap:2vw;}
+  .room-name{font-size:clamp(22px,3.4vw,44px); font-weight:800; letter-spacing:.04em; line-height:1.2;}
+  .sync{font-size:clamp(12px,1.3vw,16px); opacity:.8; margin-top:.4em; display:flex; align-items:center; gap:.5em;}
+  .sync i{width:.6em; height:.6em; border-radius:50%; background:#fff; display:inline-block;}
+  .sync.off i{background:#FFD24D;}
+  .clock{text-align:right; font-family:var(--font-mono); font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .clock b{display:block; font-size:clamp(28px,4.4vw,60px); font-weight:700; line-height:1.1;}
+  .clock span{font-size:clamp(12px,1.4vw,18px); opacity:.85;}
+
+  .status{flex:1; display:flex; flex-direction:column; justify-content:center; min-height:0;}
+  .big{font-size:clamp(64px,12vw,170px); font-weight:900; line-height:1; letter-spacing:.06em;}
+  .meeting-title{
+    font-size:clamp(28px,4.6vw,64px); font-weight:800; line-height:1.25; margin-top:.5em;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-all;
+  }
+  .meeting-meta{font-size:clamp(18px,2.4vw,32px); margin-top:.6em; display:flex; flex-wrap:wrap; gap:.4em 1em; align-items:center;}
+  .chip{background:rgba(255,255,255,.22); border-radius:999px; padding:.15em .8em; font-weight:700;}
+  .time-range{font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-weight:700;}
+  .progress{margin-top:1.2em; max-width:90%;}
+  .bar{height:clamp(8px,1vw,14px); background:rgba(255,255,255,.25); border-radius:999px; overflow:hidden;}
+  .bar div{height:100%; background:#fff; border-radius:999px; transition:width .6s ease;}
+  .remain{font-size:clamp(16px,2vw,26px); margin-top:.5em; opacity:.9;}
+  .sub{font-size:clamp(20px,2.8vw,38px); margin-top:.6em; opacity:.92; font-weight:600;}
+
+  /* ── side: today's list ── */
+  .side{
+    background:rgba(0,0,0,.14); border-radius:clamp(14px,2vw,26px);
+    padding:clamp(16px,2.4vw,32px); display:flex; flex-direction:column; min-height:0;
+  }
+  .side h2{margin:0 0 .8em; font-size:clamp(16px,2vw,26px); font-weight:800; letter-spacing:.06em; opacity:.95;}
+  .list{flex:1; overflow:hidden; display:flex; flex-direction:column; gap:clamp(8px,1.2vw,14px);}
+  .item{
+    display:grid; grid-template-columns:auto minmax(0,1fr); gap:.2em 1em;
+    padding:clamp(10px,1.4vw,18px); border-radius:clamp(10px,1.4vw,16px);
+    background:rgba(255,255,255,.12); font-size:clamp(14px,1.7vw,22px);
+  }
+  .item.now{background:#fff; color:var(--ink);}
+  .item.past{opacity:.45;}
+  .item .t{font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-weight:700; grid-row:span 2; line-height:1.35;}
+  .item .n{font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .item .w{opacity:.8; font-size:.85em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .empty{opacity:.8; font-size:clamp(16px,2vw,24px);}
+  .more{opacity:.75; font-size:clamp(13px,1.5vw,18px); text-align:center;}
+
+  @media (orientation:portrait){
+    .screen{grid-template-columns:1fr; grid-template-rows:minmax(0,1.5fr) minmax(0,1fr);}
+    .big{font-size:clamp(64px,18vw,170px);}
+    .meeting-title{font-size:clamp(28px,7vw,64px);}
+  }
+
+  /* ── room picker (no ?room=) ── */
+  .picker-wrap{max-width:760px; margin:0 auto; padding:40px 20px;}
+  .picker-wrap h1{font-size:24px; margin:0 0 6px;}
+  .picker-wrap p{color:var(--ink-soft); margin:0 0 24px; line-height:1.6;}
+  .picker-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px;}
+  .picker-grid a{
+    display:block; padding:22px 20px; border-radius:14px; background:#fff; color:var(--ink);
+    text-decoration:none; font-weight:700; font-size:18px; border:1px solid var(--line);
+  }
+  .picker-grid a small{display:block; font-weight:400; color:var(--ink-soft); font-size:12px; margin-top:4px; font-family:var(--font-mono);}
+  .picker-wrap ol{color:var(--ink-soft); line-height:1.8; padding-left:1.3em;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getFirestore, collection, onSnapshot, query, where
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  /* 與 index.html 相同的 Firebase 設定與會議室清單；若有修改，請兩邊一起改 */
+  const firebaseConfig = {
+    apiKey:            "AIzaSyDZ-kUfvcT00Y5T1WTcEArwdIS1JtzEljY",
+    authDomain:        "yuxin-meeting-room.firebaseapp.com",
+    projectId:         "yuxin-meeting-room",
+    storageBucket:     "yuxin-meeting-room.firebasestorage.app",
+    messagingSenderId: "538616048516",
+    appId:             "1:538616048516:web:32ad49f313c7dd31748bd1"
+  };
+
+  const ROOMS = [
+    {id:"xz-big",     name:"新莊大會議室"},
+    {id:"xz-glassA",  name:"新莊玻璃屋會議室A"},
+    {id:"xz-glassB",  name:"新莊玻璃屋會議室B"},
+    {id:"xz-voucher", name:"新莊傳票會議室"},
+    {id:"fj-big",     name:"輔大大會議室"},
+    {id:"bj-b1",      name:"濱江B1會議室"}
+  ];
+
+  const DEPTS = [
+    {id:"gm",  name:"總經理室"}, {id:"crm", name:"CRM"},    {id:"biz", name:"業務部"},
+    {id:"svc", name:"服務部"},   {id:"fin", name:"財務部"}, {id:"adm", name:"管理部"},
+    {id:"biz2",name:"行企公司"}
+  ];
+
+  const SOON_MIN = 10;      // 下一場開始前幾分鐘顯示「即將開始」
+  const MAX_LIST = 6;       // 右側清單最多顯示幾筆
+
+  const app = document.getElementById("app");
+  const WEEKDAYS = ["日","一","二","三","四","五","六"];
+
+  function pad2(n){ return n<10 ? "0"+n : ""+n; }
+  function todayStr(){
+    const d = new Date();
+    return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
+  }
+  function toMinutes(hhmm){ const p = hhmm.split(":"); return (+p[0])*60 + (+p[1]); }
+  function deptName(v){ const d = DEPTS.find(x => x.id===v || x.name===v); return d ? d.name : v; }
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  const roomId = new URLSearchParams(location.search).get("room");
+  const room = ROOMS.find(r => r.id === roomId);
+
+  if (!room) renderPicker();
+  else startDisplay();
+
+  /* ── 沒指定會議室：顯示選單，讓 iPad 選一間後加入主畫面 ── */
+  function renderPicker(){
+    document.body.className = "picker";
+    const base = location.href.split("?")[0];
+    app.innerHTML =
+      '<div class="picker-wrap">'+
+        '<h1>會議室門口看板</h1>'+
+        '<p>請選擇這台 iPad 要顯示的會議室。'+(roomId ? '<br>（找不到代碼「'+esc(roomId)+'」）' : '')+'</p>'+
+        '<div class="picker-grid">'+
+          ROOMS.map(r => '<a href="?room='+r.id+'">'+esc(r.name)+'<small>'+esc(base)+'?room='+r.id+'</small></a>').join("")+
+        '</div>'+
+        '<h2 style="font-size:16px;margin:32px 0 8px">iPad 設定建議</h2>'+
+        '<ol>'+
+          '<li>用 Safari 開啟對應會議室的網址，點「分享」→「加入主畫面」，之後從主畫面圖示開啟即為全螢幕。</li>'+
+          '<li>設定 →「螢幕顯示與亮度」→「自動鎖定」改為「永不」，並接上充電線。</li>'+
+          '<li>設定 →「輔助使用」→「引導使用模式」開啟，進入看板後連按三下側邊鍵鎖定在此畫面。</li>'+
+        '</ol>'+
+      '</div>';
+  }
+
+  /* ── 看板主畫面 ── */
+  function startDisplay(){
+    document.title = room.name + "｜門口看板";
+    app.innerHTML =
+      '<div class="screen">'+
+        '<div class="main">'+
+          '<div class="top">'+
+            '<div><div class="room-name">'+esc(room.name)+'</div>'+
+            '<div class="sync off" id="sync"><i></i><span>連線中…</span></div></div>'+
+            '<div class="clock"><b id="clockTime">--:--</b><span id="clockDate"></span></div>'+
+          '</div>'+
+          '<div class="status" id="status"></div>'+
+        '</div>'+
+        '<div class="side"><h2>今日排程</h2><div class="list" id="list"></div></div>'+
+      '</div>';
+
+    let todays = [];
+    let watchedDate = null;
+    let unsubscribe = null;
+
+    const db = getFirestore(initializeApp(firebaseConfig));
+
+    // 只訂閱「這間會議室、今天」的租借；跨日時重新訂閱
+    function subscribe(){
+      const date = todayStr();
+      if (date === watchedDate) return;
+      watchedDate = date;
+      if (unsubscribe) unsubscribe();
+      const q = query(collection(db, "bookings"), where("roomId", "==", room.id), where("date", "==", date));
+      unsubscribe = onSnapshot(q, snap => {
+        todays = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+                          .sort((a,b) => toMinutes(a.start) - toMinutes(b.start));
+        setSync(true);
+        render();
+      }, err => { console.error(err); setSync(false, "連線中斷，重新連線中…"); });
+    }
+
+    function setSync(ok, label){
+      const el = document.getElementById("sync");
+      el.classList.toggle("off", !ok);
+      el.querySelector("span").textContent = ok ? "即時同步中" : label;
+    }
+
+    function render(){
+      const now = new Date();
+      const nowMin = now.getHours()*60 + now.getMinutes() + now.getSeconds()/60;
+      const current = todays.find(b => toMinutes(b.start) <= nowMin && nowMin < toMinutes(b.end));
+      const next = todays.find(b => toMinutes(b.start) > nowMin);
+      const status = document.getElementById("status");
+
+      if (current){
+        const s = toMinutes(current.start), e = toMinutes(current.end);
+        const pct = Math.min(100, Math.max(0, (nowMin - s) / (e - s) * 100));
+        const left = Math.ceil(e - nowMin);
+        document.body.className = "busy";
+        status.innerHTML =
+          '<div class="big">使用中</div>'+
+          '<div class="meeting-title">'+esc(current.title)+'</div>'+
+          '<div class="meeting-meta">'+
+            '<span class="chip">'+esc(deptName(current.dept))+'</span>'+
+            '<span>'+esc(current.renter)+'</span>'+
+            '<span class="time-range">'+current.start+' – '+current.end+'</span>'+
+          '</div>'+
+          '<div class="progress"><div class="bar"><div style="width:'+pct+'%"></div></div>'+
+          '<div class="remain">剩餘 '+formatDuration(left)+(next && next.start===current.end ? '・下一場 '+next.start+' 緊接開始' : '')+'</div></div>';
+      }else if (next && toMinutes(next.start) - nowMin <= SOON_MIN){
+        document.body.className = "soon";
+        status.innerHTML =
+          '<div class="big">即將開始</div>'+
+          '<div class="meeting-title">'+esc(next.title)+'</div>'+
+          '<div class="meeting-meta">'+
+            '<span class="chip">'+esc(deptName(next.dept))+'</span>'+
+            '<span>'+esc(next.renter)+'</span>'+
+            '<span class="time-range">'+next.start+' – '+next.end+'</span>'+
+          '</div>'+
+          '<div class="sub">'+formatDuration(Math.ceil(toMinutes(next.start) - nowMin))+'後開始</div>';
+      }else{
+        document.body.className = "";
+        status.innerHTML =
+          '<div class="big">空閒</div>'+
+          '<div class="sub">'+(next
+            ? '下一場 '+next.start+'　'+esc(next.title)+'<br>可使用至 '+next.start
+            : '今日已無其他預約')+'</div>';
+      }
+
+      const list = document.getElementById("list");
+      if (!todays.length){
+        list.innerHTML = '<div class="empty">今日尚無預約</div>';
+        return;
+      }
+      // 先略過已結束的，讓清單從目前／接下來的場次開始
+      const upcomingIdx = todays.findIndex(b => toMinutes(b.end) > nowMin);
+      const startIdx = upcomingIdx === -1 ? Math.max(0, todays.length - MAX_LIST) : Math.max(0, upcomingIdx - 1);
+      const shown = todays.slice(startIdx, startIdx + MAX_LIST);
+      const hidden = todays.length - startIdx - shown.length;
+      list.innerHTML = shown.map(b => {
+        const cls = b === current ? "now" : (toMinutes(b.end) <= nowMin ? "past" : "");
+        return '<div class="item '+cls+'">'+
+          '<div class="t">'+b.start+'<br>'+b.end+'</div>'+
+          '<div class="n">'+esc(b.title)+'</div>'+
+          '<div class="w">'+esc(deptName(b.dept))+'・'+esc(b.renter)+'</div>'+
+        '</div>';
+      }).join("") + (hidden > 0 ? '<div class="more">另有 '+hidden+' 場</div>' : "");
+    }
+
+    function formatDuration(min){
+      if (min < 60) return min+" 分鐘";
+      const h = Math.floor(min/60), m = min%60;
+      return h+" 小時"+(m ? " "+m+" 分" : "");
+    }
+
+    function tick(){
+      const d = new Date();
+      document.getElementById("clockTime").textContent = pad2(d.getHours())+":"+pad2(d.getMinutes());
+      document.getElementById("clockDate").textContent =
+        (d.getMonth()+1)+"月"+d.getDate()+"日（週"+WEEKDAYS[d.getDay()]+"）";
+      subscribe();
+      render();
+    }
+    tick();
+    setInterval(tick, 15000);
+
+    // 每天凌晨 3 點重新整理一次，載入網站最新版本並釋放記憶體
+    setInterval(() => {
+      const d = new Date();
+      if (d.getHours() === 3 && d.getMinutes() < 1) location.reload();
+    }, 30000);
+
+    // 盡量避免螢幕休眠（支援的瀏覽器才有效；iPad 仍建議把自動鎖定設為「永不」）
+    let wakeLock = null;
+    async function keepAwake(){
+      try{
+        if ("wakeLock" in navigator && !wakeLock){
+          wakeLock = await navigator.wakeLock.request("screen");
+          wakeLock.addEventListener("release", () => { wakeLock = null; });
+        }
+      }catch(e){ /* 需要使用者點一下畫面才能啟用 */ }
+    }
+    keepAwake();
+    document.addEventListener("click", keepAwake);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible"){ keepAwake(); tick(); }
+    });
+  }
+</script>
+</body>
+</html>
